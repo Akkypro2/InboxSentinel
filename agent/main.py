@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from src.tools.gmail_client import fetch_recent_emails, create_draft, send_email_to_self
+from src.tools.gmail_client import fetch_recent_emails, create_draft, send_email_to_self, archive_message, trash_message
 from src.core.brain import analyze_email, generate_digest 
-from src.core.memory import init_db, is_email_processed, log_email
+from src.core.memory import init_db, is_email_processed, log_email, schedule_for_trash, get_emails_ready_to_trash, remove_from_scheduled_trash
 import traceback
 import time
 
@@ -17,8 +17,15 @@ def scan_inbox():
     print("Starting Inbox Scan...") 
     
     try:
-        # 1. Get raw emails
-        raw_emails = fetch_recent_emails(limit=10)
+        #1. check id there are emails that are expired
+        ready_to_trash = get_emails_ready_to_trash()
+        if ready_to_trash:
+            print(f"Found {len(ready_to_trash)} expired mails. Trashing now...")
+            for t_id in ready_to_trash:
+                trash_message(t_id)
+                remove_from_scheduled_trash(t_id)
+        #2. fetch new emails
+        raw_emails = fetch_recent_emails(limit=5)
         
         if not raw_emails:
             return {"message": "No new emails found."}
@@ -49,7 +56,7 @@ def scan_inbox():
                     print(f"Auto-drafting reply to {email['sender']}...")
                     create_draft(email['sender'], email['subject'], draft_content)
                     action_taken = "Draft Created"
-                elif category in ["Newsletter", "Informational", "Finance"]:
+                elif suggested_action == "Digest" or category in ["Newsletter", "Informational", "Finance"]:
                     print(f"Adding to Daily Digest: {email['subject']}")
                     digest_collection.append({
                         "sender": email['sender'],
@@ -57,6 +64,20 @@ def scan_inbox():
                         "summary": summary
                     })
                     action_taken = "Added to Digest"
+                elif suggested_action == "Archive":
+                    print(f"Archiving clutter: {email['subject']}")
+                    archive_message(email['id'])
+                    action_taken="Archived"
+                elif suggested_action == "Trash":
+                    if category == "OTP":
+                        print(f"OTP detected: Scheduling '{email['subject']}' to be trashed later")
+                        schedule_for_trash(email['id'], delay_minute=1)
+                        action_taken = "Schedule for Trash"
+                    else:
+                        print(f"Trashing useless email: {email['subject']}")
+                        trash_message(email['id'])
+                        action_taken = "Trashed"
+
 
                 full_data = {
                     "id": email['id'],

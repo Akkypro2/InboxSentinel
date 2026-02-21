@@ -25,14 +25,20 @@ def analyze_email(sender, subject, body):
     Sender: {sender}
     Subject: {subject}
     Body: {body}
+
+    CRITICAL RULES FOR 'suggested_action' & 'category':
+    1. If the email is an OTP (One Time Password), verification code, or security alert, you MUST set category to "OTP" and suggest_action to "Trash". 
+    2. If its a newsletter or informational, action is "Digest".
+    3. If it requires a human response, action is "Reply".
+    4. If its a receipt, complete order, or resolved notification that doesnt need action, suggest "Archive".
     
     Output JSON format:
     {{
-        "category": "Work" | "Personal" | "Spam" | "Newsletter" | "Finance",
+        "category": "Work" | "Personal" | "Spam" | "Newsletter" | "Finance" | "OTP",
         "urgency_score": (integer 1-10, where 10 is immediate crisis),
         "is_actionable": (boolean),
         "summary": (string, max 15 words),
-        "suggested_action": "Archive" | "Reply" | "Mark as Read" | "Flag",
+        "suggested_action": "Archive" | "Reply" | "Digest" | "Trash",
         "draft_reply": (string, null if no reply needed. Be professional and concise.)
     }}
     

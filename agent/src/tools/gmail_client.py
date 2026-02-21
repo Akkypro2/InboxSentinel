@@ -32,7 +32,7 @@ def get_gmail_service():
     service = build('gmail', 'v1', credentials=creds)
     return service
 
-def fetch_recent_emails(limit=10):
+def fetch_recent_emails(limit=5):
     """
     Fetches the last N unread emails and returns them as a list of dictionaries.
     """
@@ -118,6 +118,32 @@ def send_email_to_self(subject, body_text):
         print("SEND ERROR:")
         traceback.print_exc()
         return None
-
+    
+def archive_message(message_id):
+    """Removes the INBOX label, effectively archiving the emails"""
+    try:
+        service = get_gmail_service()
+        service.users().messages().modify(
+            uerId='me',
+            id=message_id,
+            body={'removeLabelIds': ['INBOX']}
+        ).execute()
+        print(f"Successfully Archived!")
+        return True
+    except Exception as e:
+        print("Error archiving message: {e}")
+        return False
+    
+def trash_message(message_id):
+    """"Moves the email to the trash bin (auto deletes in 30 days)"""
+    try:
+        service = get_gmail_service()
+        service.users().messages().trash(userId='me', id=message_id).execute()
+        print("Successfully moved to trash!")
+        return True
+    except Exception as e:
+        print("Error trashing mails: {e}")
+        return False
+    
 if __name__ == '__main__':
     fetch_recent_emails()
