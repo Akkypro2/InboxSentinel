@@ -32,7 +32,7 @@ def get_gmail_service():
     service = build('gmail', 'v1', credentials=creds)
     return service
 
-def fetch_recent_emails(limit=5):
+def fetch_recent_emails(limit=10):
     """
     Fetches the last N unread emails and returns them as a list of dictionaries.
     """
@@ -89,6 +89,33 @@ def create_draft(to_email, original_subject, body_text):
     except Exception as e:
         import traceback
         print("ERROR CREATING DRAFT")
+        traceback.print_exc()
+        return None
+    
+def send_email_to_self(subject, body_text):
+    """
+    Sends an email directly to the authenticated user's own inbox
+    """
+    try:
+        service = get_gmail_service()
+        profile = service.users().getProfile(userId='me').execute()
+        my_email = profile['emailAddress']
+
+        message = EmailMessage()
+        message.set_content(body_text)
+        message['To'] = my_email
+        message['From'] = my_email
+        message['Subject'] = subject
+
+        encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+        create_message = {'raw': encoded_message}
+
+        sent_message = service.users().messages().send(userId='me', body=create_message).execute()
+        print(f"Daily Digest sent to {my_email}! Message ID: {sent_message['id']}")
+        return sent_message
+    except Exception as e:
+        import traceback
+        print("SEND ERROR:")
         traceback.print_exc()
         return None
 

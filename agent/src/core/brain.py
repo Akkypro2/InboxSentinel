@@ -53,6 +53,33 @@ def analyze_email(sender, subject, body):
     except Exception as e:
         print(f"Error analyzing email: {e}")
         return None
+    
+def generate_digest(newsletter_data):
+    """
+    Takes a list of newsletter summaries and generates a formatted Daily Digest."""
+
+    prompt = f"""
+    You are an executive AI assistant named 'Inbox Sentinel'.
+    I am giving you a list of newsletters, updates and informational emails I received today.
+    
+    Write a clean, easy-to-read "Daily Digest" summarizing these emails.
+    Use bullet points, bold text, and emojis to make it highly readable.
+    Do NOT output JSON. Output a beautifully formatted email body
+    Here is the data:
+    {newsletter_data}"""
+
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": "You are a helpful executive assistant."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print("Error generating digest: {e}")
+        return None
 
 # --- TEST AREA ---
 if __name__ == "__main__":

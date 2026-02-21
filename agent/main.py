@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from src.tools.gmail_client import fetch_recent_emails, create_draft
-from src.core.brain import analyze_email 
+from src.tools.gmail_client import fetch_recent_emails, create_draft, send_email_to_self
+from src.core.brain import analyze_email, generate_digest 
 from src.core.memory import init_db, is_email_processed, log_email
 import traceback
 import time
@@ -18,12 +18,13 @@ def scan_inbox():
     
     try:
         # 1. Get raw emails
-        raw_emails = fetch_recent_emails(limit=5)
+        raw_emails = fetch_recent_emails(limit=10)
         
         if not raw_emails:
             return {"message": "No new emails found."}
 
         final_results = [] 
+        digest_collection = []
         skipped_count = 0
         
         
@@ -39,13 +40,23 @@ def scan_inbox():
             
             if analysis:
                 action_taken = "None"
+                category = analysis.get("category", "")
                 suggested_action = analysis.get("suggested_action", "")
                 draft_content = analysis.get("draft_reply")
+                summary = analysis.get("summary", "")
 
                 if suggested_action == "Reply" and draft_content:
                     print(f"Auto-drafting reply to {email['sender']}...")
                     create_draft(email['sender'], email['subject'], draft_content)
                     action_taken = "Draft Created"
+                elif category in ["Newsletter", "Informational", "Finance"]:
+                    print(f"Adding to Daily Digest: {email['subject']}")
+                    digest_collection.append({
+                        "sender": email['sender'],
+                        "subject": email['subject'],
+                        "summary": summary
+                    })
+                    action_taken = "Added to Digest"
 
                 full_data = {
                     "id": email['id'],
@@ -62,6 +73,13 @@ def scan_inbox():
                 print("Skipping email due to analysis failure.")
 
             time.sleep(3)
+
+        if digest_collection:
+            print(f"Generating Daily Digest from {len(digest_collection)} emails...")
+            digest_body = generate_digest(digest_collection)
+
+            if digest_body:
+                send_email_to_self("Your Daily Digest is here", digest_body)
 
         return {"analyzed_count": len(final_results), "skipper_count": skipped_count, "emails": final_results}
 
