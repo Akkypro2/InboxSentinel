@@ -2,22 +2,21 @@ import os
 import json
 import google.generativeai as genai
 from dotenv import load_dotenv
+from groq import Groq
 
 # Load the API key from the .env file
 load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = os.getenv("GROQ_API_KEY")
 
 if not api_key:
-    raise ValueError("No GEMINI_API_KEY found in .env file!")
+    raise ValueError("No GROQ_API_KEY found in .env file!")
 
-# Configure Gemini
-genai.configure(api_key=api_key)
+client = Groq(api_key=api_key)
 
 def analyze_email(sender, subject, body):
     """
-    Sends the email content to Gemini to determine urgency and next steps.
+    Sends the email content to Deepseek to determine urgency and next steps.
     """
-    model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
     You are an executive assistant named 'Inbox Sentinel'. 
@@ -41,10 +40,16 @@ def analyze_email(sender, subject, body):
     """
     
     try:
-        response = model.generate_content(prompt)
-        # Clean up if Gemini adds ```json markdown
-        clean_text = response.text.replace("```json", "").replace("```", "").strip()
-        return json.loads(clean_text)
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": "You are a helpful executive assistant designed to output strict JSON."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        json_content = response.choices[0].message.content
+        return json.loads(json_content)
     except Exception as e:
         print(f"Error analyzing email: {e}")
         return None

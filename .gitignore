@@ -20,3 +20,10 @@ Thumbs.db
 
 # IDE
 .vscode/
+
+#databases
+*.db
+*.sqlite
+*.sqlite3
+*-journal
+agent_memory.db

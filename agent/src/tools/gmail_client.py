@@ -1,4 +1,6 @@
 import os.path
+import base64
+from email.message import EmailMessage
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -59,6 +61,33 @@ def fetch_recent_emails(limit=5):
             "body": snippet
         })
     return email_list
+
+def create_draft(to_email, original_subject, body_text):
+    """
+    Creates a dradt email in the user's Gmail account.
+    """
+    try:
+        service = get_gmail_service()
+        message = EmailMessage()
+        message.set_content(body_text)
+        message['To'] - to_email
+
+        if not original_subject.lower().starswith('re:'):
+            message['Subject'] = f"Re: {original_subject}"
+        else:
+            message['Subject'] = original_subject
+
+        encoded_message = base64.urlsafe_b64decode(message.as_bytes()).decode()
+        create_message = {'message': {'raw': encoded_message}}
+
+        #create the draft
+        draft = service.users().drafts().create(userId='me', body=create_message).execute()
+        print(f"Draft created, Draft ID: {draft['id']}")
+        return draft
+    
+    except Exception as e:
+        print("Error creating draft: {e}")
+        return None
 
 if __name__ == '__main__':
     fetch_recent_emails()
