@@ -7,7 +7,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
+SCOPES = ['https://www.googleapis.com/auth/gmail.modify',
+          'https://www.googleapis.com/auth/gmail.compose']
 
 def get_gmail_service():
     creds = None
@@ -64,20 +65,20 @@ def fetch_recent_emails(limit=5):
 
 def create_draft(to_email, original_subject, body_text):
     """
-    Creates a dradt email in the user's Gmail account.
+    Creates a draft email in the user's Gmail account.
     """
     try:
         service = get_gmail_service()
         message = EmailMessage()
         message.set_content(body_text)
-        message['To'] - to_email
+        message['To'] = to_email
 
-        if not original_subject.lower().starswith('re:'):
+        if not original_subject.lower().startswith('re:'):
             message['Subject'] = f"Re: {original_subject}"
         else:
             message['Subject'] = original_subject
 
-        encoded_message = base64.urlsafe_b64decode(message.as_bytes()).decode()
+        encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
         create_message = {'message': {'raw': encoded_message}}
 
         #create the draft
@@ -86,7 +87,9 @@ def create_draft(to_email, original_subject, body_text):
         return draft
     
     except Exception as e:
-        print("Error creating draft: {e}")
+        import traceback
+        print("ERROR CREATING DRAFT")
+        traceback.print_exc()
         return None
 
 if __name__ == '__main__':
