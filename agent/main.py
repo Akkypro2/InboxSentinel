@@ -4,7 +4,10 @@ from src.core.brain import analyze_email, generate_digest
 from src.core.memory import init_db, is_email_processed, log_email, schedule_for_trash, get_emails_ready_to_trash, remove_from_scheduled_trash
 import traceback
 import time
+import os
+os.chdir(r"C:\Finalised Projects\InboxOpenClaw\agent")
 
+print("Hello mf")
 app = FastAPI()
 init_db()
 
@@ -36,6 +39,7 @@ def scan_inbox():
         
         
         for email in raw_emails:
+            print(f"\n--- Inspecting Email: {email['subject']} ---")
             if is_email_processed(email['id']):
                 print(f"Skipping (Already Processed): {email['subject']}")
                 skipped_count += 1
@@ -71,7 +75,7 @@ def scan_inbox():
                 elif suggested_action == "Trash":
                     if category == "OTP":
                         print(f"OTP detected: Scheduling '{email['subject']}' to be trashed later")
-                        schedule_for_trash(email['id'], delay_minute=1)
+                        schedule_for_trash(email['id'], delay_minute=60)
                         action_taken = "Schedule for Trash"
                     else:
                         print(f"Trashing useless email: {email['subject']}")
@@ -108,3 +112,6 @@ def scan_inbox():
         print("CRITICAL ERROR:")
         traceback.print_exc()
         return {"error": str(e)}
+    
+if __name__ == "__main__":
+    scan_inbox()

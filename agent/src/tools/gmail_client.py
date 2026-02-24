@@ -122,6 +122,7 @@ def send_email_to_self(subject, body_text):
 def archive_message(message_id):
     """Removes the INBOX label, effectively archiving the emails"""
     try:
+        print(f"Attempting to archive: {email['subject']}...")
         service = get_gmail_service()
         service.users().messages().modify(
             uerId='me',
@@ -131,7 +132,7 @@ def archive_message(message_id):
         print(f"Successfully Archived!")
         return True
     except Exception as e:
-        print("Error archiving message: {e}")
+        print(f"CRITICAL ERROR archiving '{email['subject']}': {str(e)}")
         return False
     
 def trash_message(message_id):
