@@ -5,9 +5,12 @@ from src.core.memory import init_db, is_email_processed, log_email, schedule_for
 import traceback
 import time
 import os
-os.chdir(r"C:\Finalised Projects\InboxOpenClaw\agent")
+import uvicorn
 
-print("Hello mf")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(BASE_DIR)
+
+print("Starting Server..")
 app = FastAPI()
 init_db()
 
@@ -45,7 +48,7 @@ def scan_inbox():
                 skipped_count += 1
                 continue
 
-            print(f"Analyzing new email: {email['subject']}...") 
+            print(f"Analyzing new email: {email['subject']}...")
             
             analysis = analyze_email(email['sender'], email['subject'], email['body'])
             
@@ -114,4 +117,5 @@ def scan_inbox():
         return {"error": str(e)}
     
 if __name__ == "__main__":
-    scan_inbox()
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
